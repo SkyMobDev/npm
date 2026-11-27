@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyMob npm packages</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --fg: #1a1d21;
+    --muted: #5c6570;
+    --rule: #e3e7eb;
+    --code-bg: #f5f7f9;
+    --accent: #0b6ec4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171a;
+      --fg: #e6e9ec;
+      --muted: #9aa4ae;
+      --rule: #2a2f35;
+      --code-bg: #1c2126;
+      --accent: #61aef0;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto;
+    padding: 3rem 1.25rem 4rem;
+    max-width: 46rem;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
+  h2 { font-size: 1.05rem; margin: 2.5rem 0 .75rem; letter-spacing: -.005em; }
+  .lede { color: var(--muted); margin: 0 0 2rem; }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+    font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  p code, li code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; font-size: .9em; }
+  a { color: var(--accent); }
+  footer {
+    margin-top: 3rem; padding-top: 1.25rem;
+    border-top: 1px solid var(--rule);
+    color: var(--muted); font-size: .875rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>SkyMob npm packages</h1>
+<p class="lede">The packages for building module libraries for the SkyMob designer.</p>
+
+<ul>
+  <li><code>@skymobdev/sdk</code>: develop, test and build a module library.</li>
+  <li><code>@skymobdev/standard-catalog-types</code>: the standard catalog's modules, typed for the
+  modules you build on them.</li>
+  <li><code>@skymobdev/cad-mock</code>: the sample catalog the workbench and tests build modules
+  against.</li>
+</ul>
+
+<h2>Use</h2>
+<p>Point the <code>@skymobdev</code> scope here in your project's <code>.npmrc</code>. No token or
+account is needed.</p>
+<pre><code>@skymobdev:registry=https://npm.skymob.app/</code></pre>
+
+<p>With pnpm, a project that holds new versions back (<code>minimumReleaseAge</code>) exempts
+these packages in <code>pnpm-workspace.yaml</code>, so a new SDK release installs right away:</p>
+<pre><code>minimumReleaseAgeExclude:
+  - "@skymobdev/*"</code></pre>
+
+<p>Then install as from any registry:</p>
+<pre><code>pnpm add -D @skymobdev/sdk @skymobdev/standard-catalog-types @skymobdev/cad-mock</code></pre>
+
+<footer>
+  Published from <a href="https://github.com/SkyMobDev/npm">SkyMobDev/npm</a>, whose
+  <code>packages.list</code> names every version served here.
+</footer>
+
+</body>
+</html>
