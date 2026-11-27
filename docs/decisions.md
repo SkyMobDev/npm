@@ -32,16 +32,32 @@ ID, a date and a status; the newest change to an entry goes in its own text.
   `@skymobdev/standard-catalog-types` and `@skymobdev/cad-mock`, so a public
   sample library can be forked and built with no account.
 
-## D3. A person promotes; CI holds no credential
+## D3. A Public release button publishes a hardcoded list of packages
 
 - **Date:** 2026-11-27. **Status:** decided.
-- **Decision:** `packages.list` and `SHA256SUMS` are the promotion decision.
-  `Promote.psm1` downloads a version with the operator's own access, checks its
-  sha512 against what GitHub Packages published, uploads it to the `pool`
-  release and opens the pull request; the merge publishes.
-- **Why:** the same boundary as the apt channel: the private-to-public crossing
-  is a person, and publishing a version upstream is a separate decision from
-  serving it.
+- **Decision:** the **Public release** workflow in SkyMobDev/packages, started by
+  hand, is the only way onto this registry. `PUBLIC_PACKAGES` in its
+  `scripts/public-set.mjs` hardcodes what goes public, and a listed package that
+  needs an unlisted `@skymobdev` package fails the run. The workflow downloads
+  each chosen version from GitHub Packages, holds it to the sha512 published
+  there, uploads it to the `pool` release, lists it with `record-version.mjs` and
+  pushes to `main`, whose publish workflow checks, test-installs and deploys.
+- **Why:**
+  - An internal release (every Athena merge that touches the SDK) stays a
+    separate decision from a public one.
+  - SkyMobDev/packages already reads every `@skymobdev` package with its own token
+    and holds the release App, so no credential is added anywhere, and this
+    public repository reads no private package.
+  - The list is hardcoded so that nothing goes public by being a dependency.
+- **Rejected:**
+  - a person running a local promotion module (`Promote.psm1`, built first): the
+    button does the same without local tools;
+  - every internal release opening a promotion pull request: a pull request per
+    SDK merge, with conflicting edits to `packages.list`;
+  - this repository reading GitHub Packages itself: a grant on each private
+    package to a public repository's workflows;
+  - computing the public set from the SDK's dependencies: it could publish more
+    than intended.
 
 ## D4. pnpm's release cooldown exempts the SkyMob packages in the consuming project
 
@@ -62,6 +78,9 @@ ID, a date and a status; the newest change to an entry goes in its own text.
 
 ## Open
 
+- Protecting `main` and the `github-pages` environment: a ruleset that requires
+  pull requests on `main` with the release App allowed to push, and deploys from
+  `main` alone.
 - A canary channel, as apt's beta: prereleases are already kept out of
   `latest`, which may be enough.
 - Pruning the `pool` release, as apt's `Remove-AptStaleAsset`.

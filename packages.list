@@ -1,14 +1,16 @@
-# Packages published at https://npm.skymob.app — this file IS the promotion
-# decision. Only the versions named here are served, so publishing a version to
-# GitHub Packages reaches library authors only once it is promoted here.
+# Packages published at https://npm.skymob.app: only the versions named here are
+# served. The Public release button in SkyMobDev/packages adds them, so an
+# internal release to GitHub Packages reaches library authors only when someone
+# presses it.
 #
-# Edit it with New-NpmPromotion / Remove-NpmPromotion (Promote.psm1), not by
-# hand: the matching hash in SHA256SUMS moves with it, and the publish workflow
-# refuses a commit where the two disagree.
+# Edit it with record-version.mjs, not by hand: the matching hash in SHA256SUMS
+# moves with it, and the publish workflow refuses a commit where the two
+# disagree. Taking a version off is `node record-version.mjs --remove <name>
+# <version>` in a pull request.
 #
 # Format: "<package> <version> <promoted-at>", one per line. <promoted-at> is
-# the UTC time of the promotion; the index gives it to clients as the version's
-# publish time, which pnpm's minimumReleaseAge counts from.
+# the UTC time the version was listed; the index gives it to clients as the
+# version's publish time, which pnpm's minimumReleaseAge counts from.
 #
 # A version range resolves among the versions listed here. A lock file names
 # its version's tarball on the pool release directly, so it keeps installing

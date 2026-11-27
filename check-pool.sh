@@ -2,7 +2,8 @@
 # Proves the two halves of a promotion agree and leaves the tarballs where
 # build-index.mjs reads them: SHA256SUMS records exactly what packages.list
 # names, and every file downloaded from the pool release matches its recorded
-# hash. It holds no secrets and deploys nothing, so a pull request runs it too.
+# hash. It reads only this repository's public release, so a pull request runs
+# it too.
 #
 # Needs POOL_RELEASE from the workflow, plus a GH_TOKEN that can read this
 # repository's releases. Writes the tarballs to downloads/.
@@ -11,7 +12,8 @@ set -euo pipefail
 expected=$(mktemp); recorded=$(mktemp)
 
 [ -f packages.list ] || { echo "::error::packages.list is missing"; exit 1; }
-while read -r name version promoted rest; do
+# `|| [ -n ... ]` reads a last line that has no newline, which `read` alone drops.
+while read -r name version promoted rest || [ -n "${name:-}" ]; do
   case "$name" in '') continue ;; esac
   { [ -n "${promoted:-}" ] && [ -z "${rest:-}" ]; } ||
     { echo "::error::malformed packages.list entry: $name ${version:-} ${promoted:-} ${rest:-}"; exit 1; }
@@ -47,7 +49,7 @@ if ! diff -u --label "named by packages.list" --label "recorded in SHA256SUMS" \
 fi
 
 mkdir -p downloads
-# With no pattern, gh would download every asset on the release.
+# gh downloads every asset on the release when given no pattern.
 [ -s "$recorded" ] || { echo "packages.list names no packages"; exit 0; }
 
 # Only the files SHA256SUMS records, each held to its recorded hash: an asset

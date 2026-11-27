@@ -8,7 +8,7 @@
  *   node build-index.mjs build <packages.list> <tarball dir> <out dir> <pool url>
  *   node build-index.mjs manifest <file.tgz>     prints the tarball's name and version
  *
- * No dependencies, so the publish workflow and Promote.psm1 run it on a bare Node.
+ * No dependencies, so the publish workflow and record-version.mjs run it on a bare Node.
  */
 
 import { createHash } from "node:crypto"
@@ -35,8 +35,10 @@ export const readManifest = (bytes) => {
         .subarray(start, start + length)
         .toString("utf8")
         .replace(/\0[\s\S]*$/, "")
-    // A ustar header splits a long path into a prefix and a name.
-    const prefix = field(257, 5) === "ustar" ? field(345, 155) : ""
+    // A POSIX ustar header splits a long path into a prefix and a name. A GNU header
+    // ("ustar  ") keeps other fields at that offset.
+    const ustar = header.subarray(257, 263).toString("latin1") === "ustar\0"
+    const prefix = ustar ? field(345, 155) : ""
     const path = prefix ? `${prefix}/${field(0, 100)}` : field(0, 100)
     const size = parseInt(field(124, 12).trim() || "0", 8)
     const body = offset + 512
@@ -91,20 +93,34 @@ export const compareVersions = (a, b) => {
 
 const isPrerelease = (version) => version.split("+")[0].includes("-")
 
-/** The entries of packages.list: `<package> <version> <promoted-at>` per line. */
-export const readList = (text) =>
-  text
-    .split(/\r?\n/)
-    .map((line) => line.replace(/#.*/, "").trim())
-    .filter((line) => line !== "")
-    .map((line) => {
-      const fields = line.split(/\s+/)
-      if (fields.length !== 3) {
-        throw new Error(`malformed packages.list entry: ${line}`)
-      }
-      const [name, version, promotedAt] = fields
-      return { name, version, promotedAt }
-    })
+/**
+ * packages.list as written: the comment block above the first entry, the entries
+ * (`<package> <version> <promoted-at>`, each with the comment on its line), and the
+ * comment lines below the first entry.
+ */
+export const parseList = (text) => {
+  const header = []
+  const entries = []
+  const trailer = []
+  for (const line of text.replace(/\r?\n$/, "").split(/\r?\n/)) {
+    const hash = line.indexOf("#")
+    const content = (hash < 0 ? line : line.slice(0, hash)).trim()
+    if (content === "") {
+      ;(entries.length === 0 ? header : trailer).push(line)
+      continue
+    }
+    const fields = content.split(/\s+/)
+    if (fields.length !== 3) {
+      throw new Error(`malformed packages.list entry: ${line}`)
+    }
+    const [name, version, promotedAt] = fields
+    entries.push({ name, version, promotedAt, comment: hash < 0 ? "" : line.slice(hash) })
+  }
+  return { header, entries, trailer }
+}
+
+/** The entries of packages.list. */
+export const readList = (text) => parseList(text).entries
 
 /**
  * Each package's packument, keyed by package name. `latest` is the highest

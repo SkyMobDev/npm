@@ -1,18 +1,18 @@
 name: publish
 
-# Rebuilds the registry index from scratch on every run and deploys it to Pages.
-# Nothing is incremental: every packument is regenerated from packages.list over
-# tarballs downloaded from this repository's `pool` release. The person who
-# promoted a version uploaded its tarball there and recorded its hash in
-# SHA256SUMS, so this job holds no credential for the private registry the
-# packages come from, and publishes nothing but reviewed bytes.
+# Rebuilds the registry index from scratch on every run and deploys it to Pages:
+# every packument is regenerated from packages.list over tarballs downloaded from
+# this repository's `pool` release. The Public release
+# workflow in SkyMobDev/packages uploaded each tarball there and recorded its
+# hash in SHA256SUMS, so this job reads only this repository, and publishes only
+# the bytes SHA256SUMS records.
 on:
-  # Merging a change to packages.list publishes it: the review on that pull
-  # request is the promotion gate, and `git revert` is the rollback.
+  # A change to packages.list on main publishes it, and `git revert` is the
+  # rollback.
   push:
     branches: [main]
-  # A pull request builds and checks the index the same way, and deploys
-  # nothing: a promotion whose tarball never reached the release, or that fails
+  # A pull request builds and checks the index the same way and stops before the
+  # deploy, so a version whose tarball is missing from the release, or that fails
   # to install, fails here instead of after the merge.
   pull_request:
     branches: [main]
@@ -21,13 +21,9 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 env:
-  # The release holding every tarball packages.list may name. Promote.psm1
-  # uploads to it; this workflow only reads it.
+  # The release holding every tarball packages.list may name. The Public release
+  # workflow uploads to it; this workflow only reads it.
   POOL_RELEASE: pool
 
 jobs:
@@ -36,8 +32,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: test the index builder
-        run: node --test build-index.test.mjs
+      - name: test the index builder and recorder
+        run: node --test build-index.test.mjs record-version.test.mjs
 
       - name: check packages.list, SHA256SUMS and the pool release
         env:
@@ -52,12 +48,19 @@ jobs:
             "https://github.com/$GITHUB_REPOSITORY/releases/download/$POOL_RELEASE/"
           cp site/index.html _site/index.html
 
+      # Taken before the install below, so what deploys is the tree as built.
+      - uses: actions/upload-pages-artifact@v5
+        if: github.event_name != 'pull_request'
+        with:
+          path: _site
+
       - name: install every package from the index, with npm and pnpm
-        # Serves the exact tree that deploys the way Pages serves it: the %2f in
-        # a scoped name decodes to the file's path, and a file without an
-        # extension goes out as application/octet-stream. Installs the latest of
-        # every package at once, so their dependencies and peers resolve side by
-        # side, then checks each package offers exactly the versions listed.
+        # Serves the built tree the way Pages serves it: the %2f in a scoped name
+        # decodes to the file's path, and a file without an extension goes out as
+        # application/octet-stream. Installs the latest of every package at once,
+        # so their dependencies and peers resolve side by side, then checks each
+        # package offers exactly the versions listed. Install scripts stay off:
+        # the check is that the index resolves and the tarballs unpack.
         run: |
           set -euo pipefail
           entries=$(sed 's/#.*//; s/\r$//' packages.list | awk 'NF')
@@ -79,9 +82,9 @@ jobs:
             echo '{ "name": "index-check", "private": true }' > "$work/package.json"
             echo "::group::$tool installs $(tr '\n' ' ' <<<"$names")"
             if [ "$tool" = npm ]; then
-              (cd "$work" && npm install --no-audit --no-fund $names)
+              (cd "$work" && npm install --no-audit --no-fund --ignore-scripts $names)
             else
-              (cd "$work" && npx --yes pnpm@10 add $names)
+              (cd "$work" && npx --yes pnpm@10 add --ignore-scripts $names)
             fi
             echo "::endgroup::"
           done
@@ -98,15 +101,15 @@ jobs:
             echo "$name: $(tr '\n' ' ' <<<"$served")"
           done
 
-      - uses: actions/upload-pages-artifact@v5
-        if: github.event_name != 'pull_request'
-        with:
-          path: _site
-
   deploy:
     if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
+    # One deploy at a time, the newest waiting one going next. Only main runs
+    # reach this job.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write
