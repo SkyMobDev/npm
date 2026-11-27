@@ -1,0 +1,52 @@
+{
+  "_id": "@skymobdev/registry-probe",
+  "name": "@skymobdev/registry-probe",
+  "dist-tags": {
+    "latest": "0.1.1"
+  },
+  "versions": {
+    "0.1.0": {
+      "name": "@skymobdev/registry-probe",
+      "version": "0.1.0",
+      "description": "A placeholder that checks npm and pnpm install from the SkyMob registry on GitHub Pages.",
+      "type": "module",
+      "main": "index.js",
+      "license": "UNLICENSED",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/SkyMobDev/npm"
+      },
+      "_id": "@skymobdev/registry-probe@0.1.0",
+      "dist": {
+        "tarball": "https://github.com/SkyMobDev/npm/releases/download/pool/skymobdev-registry-probe-0.1.0.tgz",
+        "shasum": "5efc0f4819b6084f8cb5f6f6e54cc91322b1ec52",
+        "integrity": "sha512-74wuqQbR54m3zRN91rWpvrYWo1b6BDZ3WjFA5f4sXVtyhgbev4UG2vQoCj9UpzpQ9hoV2as6/+XDpqUYJzjq4A=="
+      }
+    },
+    "0.1.1": {
+      "name": "@skymobdev/registry-probe",
+      "version": "0.1.1",
+      "description": "A placeholder that checks npm and pnpm install from the SkyMob registry on GitHub Pages.",
+      "type": "module",
+      "main": "index.js",
+      "license": "UNLICENSED",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/SkyMobDev/npm"
+      },
+      "_id": "@skymobdev/registry-probe@0.1.1",
+      "dist": {
+        "tarball": "https://github.com/SkyMobDev/npm/releases/download/pool/skymobdev-registry-probe-0.1.1.tgz",
+        "shasum": "9726614fe4a0cf4eb355bf8fd51145f79c165452",
+        "integrity": "sha512-LCD5h5aYYpfgsfDVv37ba8N1jqKhcTC7OGewH2wkJpU0mE/qbIiIS8g11iAuLsd66EMnmbb/1UQ7GavXHgCPCQ=="
+      }
+    }
+  },
+  "time": {
+    "created": "2026-11-27T18:07:05.062Z",
+    "modified": "2026-11-27T18:07:05.062Z",
+    "0.1.0": "2026-11-27T18:07:05.062Z",
+    "0.1.1": "2026-11-27T18:07:05.062Z"
+  },
+  "_variant": "decoded path"
+}
