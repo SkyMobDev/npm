@@ -1,0 +1,118 @@
+name: publish
+
+# Rebuilds the registry index from scratch on every run and deploys it to Pages.
+# Nothing is incremental: every packument is regenerated from packages.list over
+# tarballs downloaded from this repository's `pool` release. The person who
+# promoted a version uploaded its tarball there and recorded its hash in
+# SHA256SUMS, so this job holds no credential for the private registry the
+# packages come from, and publishes nothing but reviewed bytes.
+on:
+  # Merging a change to packages.list publishes it: the review on that pull
+  # request is the promotion gate, and `git revert` is the rollback.
+  push:
+    branches: [main]
+  # A pull request builds and checks the index the same way, and deploys
+  # nothing: a promotion whose tarball never reached the release, or that fails
+  # to install, fails here instead of after the merge.
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # The release holding every tarball packages.list may name. Promote.psm1
+  # uploads to it; this workflow only reads it.
+  POOL_RELEASE: pool
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: test the index builder
+        run: node --test build-index.test.mjs
+
+      - name: check packages.list, SHA256SUMS and the pool release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash ./check-pool.sh
+
+      - name: build the index
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          node build-index.mjs build packages.list downloads _site \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/$POOL_RELEASE/"
+          cp site/index.html _site/index.html
+
+      - name: install every package from the index, with npm and pnpm
+        # Serves the exact tree that deploys the way Pages serves it: the %2f in
+        # a scoped name decodes to the file's path, and a file without an
+        # extension goes out as application/octet-stream. Installs the latest of
+        # every package at once, so their dependencies and peers resolve side by
+        # side, then checks each package offers exactly the versions listed.
+        run: |
+          set -euo pipefail
+          entries=$(sed 's/#.*//; s/\r$//' packages.list | awk 'NF')
+          [ -n "$entries" ] || { echo "packages.list names no packages"; exit 0; }
+          names=$(awk '{ print $1 }' <<<"$entries" | LC_ALL=C sort -u)
+
+          python3 -m http.server --bind 127.0.0.1 --directory _site 8080 >/dev/null 2>&1 &
+          server=$!
+          trap 'kill "$server"' EXIT
+          for _ in $(seq 1 40); do
+            curl -sf -o /dev/null http://127.0.0.1:8080/ && break
+            sleep 0.25
+          done
+
+          for tool in npm pnpm; do
+            work=$(mktemp -d)
+            cut -d/ -f1 <<<"$names" | LC_ALL=C sort -u |
+              sed 's|$|:registry=http://127.0.0.1:8080/|' > "$work/.npmrc"
+            echo '{ "name": "index-check", "private": true }' > "$work/package.json"
+            echo "::group::$tool installs $(tr '\n' ' ' <<<"$names")"
+            if [ "$tool" = npm ]; then
+              (cd "$work" && npm install --no-audit --no-fund $names)
+            else
+              (cd "$work" && npx --yes pnpm@10 add $names)
+            fi
+            echo "::endgroup::"
+          done
+
+          for name in $names; do
+            listed=$(awk -v n="$name" '$1 == n { print $2 }' <<<"$entries" | LC_ALL=C sort)
+            served=$(cd "$work" && npm view "$name" versions --json |
+              node -e 'let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () =>
+                console.log([].concat(JSON.parse(s)).sort().join("\n")))')
+            if [ "$listed" != "$served" ]; then
+              echo "::error::$name serves $(tr '\n' ' ' <<<"$served")but packages.list names $(tr '\n' ' ' <<<"$listed")"
+              exit 1
+            fi
+            echo "$name: $(tr '\n' ' ' <<<"$served")"
+          done
+
+      - uses: actions/upload-pages-artifact@v5
+        if: github.event_name != 'pull_request'
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
