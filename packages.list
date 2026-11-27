@@ -16,6 +16,9 @@
 # its version's tarball on the pool release directly, so it keeps installing
 # while that file stays on the release.
 
+@skymobdev/cad-mock 0.1.74 2026-11-27T23:12:17Z
 @skymobdev/cad-mock 0.1.73 2026-11-27T19:48:46Z
+@skymobdev/sdk 0.2.1 2026-11-27T23:12:17Z
 @skymobdev/sdk 0.2.0 2026-11-27T19:48:46Z
+@skymobdev/standard-catalog-types 0.1.1 2026-11-27T23:12:17Z
 @skymobdev/standard-catalog-types 0.1.0 2026-11-27T19:48:46Z
