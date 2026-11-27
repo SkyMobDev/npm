@@ -3,12 +3,11 @@
 How the SkyMob npm registry came to be built the way it is. Each entry has an
 ID, a date and a status; the newest change to an entry goes in its own text.
 
-## D1. GitHub hosts the registry, as it hosts the apt channel
+## D1. GitHub hosts the registry
 
 - **Date:** 2026-11-27. **Status:** decided.
 - **Decision:** the registry is static files on this repository's GitHub Pages
-  site, with the tarballs as assets of a `pool` release, the way
-  [SkyMobDev/apt](https://github.com/SkyMobDev/apt) serves `.deb` files.
+  site, with the tarballs as assets of a `pool` release.
 - **Why:** module library authors outside the organization need the SDK, and
   GitHub Packages serves npm packages only to accounts with access to the
   private repositories, with a token even for public ones.
@@ -81,6 +80,6 @@ ID, a date and a status; the newest change to an entry goes in its own text.
 - Protecting `main` and the `github-pages` environment: a ruleset that requires
   pull requests on `main` with the release App allowed to push, and deploys from
   `main` alone.
-- A canary channel, as apt's beta: prereleases are already kept out of
-  `latest`, which may be enough.
-- Pruning the `pool` release, as apt's `Remove-AptStaleAsset`.
+- A canary channel: prereleases are already kept out of `latest`, which may be
+  enough.
+- Pruning the `pool` release of tarballs no listed version names.
